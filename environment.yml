@@ -1,0 +1,23 @@
+name: mint-env
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python>=3.10
+
+# Setup dependencies.
+  - cmake
+  - cython
+  - setuptools
+  - tbb-devel
+  - numpy
+  - pip
+
+# Core dependencies.
+  - libnetcdf
+  - vtk>=9.1.0
+  - xarray
+  - defopt
+  - python-mint>=1.25.0
+
