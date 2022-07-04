@@ -7,8 +7,6 @@ dependencies:
   - python>=3.10
 
 # Setup dependencies.
-  - cmake
-  - cython
   - setuptools
   - tbb-devel
   - numpy
