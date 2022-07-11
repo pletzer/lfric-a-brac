@@ -111,12 +111,16 @@ class LateralFlux(object):
 
 
     def compute_fluxes(self):
+
+        # assume last dimension is number of edges
         self.fluxes = numpy.empty(self.dims[:-1], numpy.float64)
+
         self.mai.begin()
         for i in range(self.mai.getNumIters()):
-            inds = self.mai.getIndices()
-            slce = list(inds) + [slice(0, self.numEdges)]
-            self.fluxes[inds] = self.pli.getIntegral(self.edge_integrated[slce], placement=mint.UNIQUE_EDGE_DATA)
+            inds = tuple(self.mai.getIndices())
+            slab = inds + (slice(0, self.numFaces*mint.NUM_EDGES_PER_QUAD),)
+            self.fluxes[inds] = self.pli.getIntegral(self.edge_integrated[slab],
+                                placement=mint.CELL_BY_CELL_DATA)
 
     def get_fluxes(self):
         return self.fluxes
@@ -132,9 +136,10 @@ def main(*, filename: Path='./lfric_diag.nc', target_line: str='[(-180., -85.), 
     lf.set_target_line(xy)
 
     lf.compute_edge_integrals()
-    # lf.compute_fluxes()
-    # fluxes = lf.get_fluxes()
-    # print(f'integrated flux: {flux}')
+
+    lf.compute_fluxes()
+    fluxes = lf.get_fluxes()
+    print(f'integrated fluxes: {fluxes}')
 
 
 if __name__ == '__main__':
