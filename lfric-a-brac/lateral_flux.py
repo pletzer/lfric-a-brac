@@ -9,7 +9,7 @@ from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
 import numpy
 
 INF = float('inf')
-A = 6.371e6 # Earth radius
+A = 1.0 # 6.371e6 # Earth radius
 
 
 class LateralFlux(object):
@@ -114,13 +114,23 @@ class LateralFlux(object):
 
         # assume last dimension is number of edges
         self.fluxes = numpy.empty(self.dims[:-1], numpy.float64)
+        print(f'shape of fluxes = {self.fluxes.shape}')
 
         self.mai.begin()
         for i in range(self.mai.getNumIters()):
+
+            # get the index set for this iteration
             inds = tuple(self.mai.getIndices())
+
+            # get the integrated edge values for this time/elev iteration
             slab = inds + (slice(0, self.numFaces*mint.NUM_EDGES_PER_QUAD),)
-            self.fluxes[inds] = self.pli.getIntegral(self.edge_integrated[slab],
-                                placement=mint.CELL_BY_CELL_DATA)
+            data = self.edge_integrated[slab]
+
+            # retrieve the flux for this time/elev and store its value
+            self.fluxes[inds] = self.pli.getIntegral(data, placement=mint.CELL_BY_CELL_DATA)
+
+            # increment the iterator
+            self.mai.next()
 
     def get_fluxes(self):
         return self.fluxes
