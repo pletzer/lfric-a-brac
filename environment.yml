@@ -1,10 +1,10 @@
-name: mint-env
+name: lfricabrac
 
 channels:
   - conda-forge
 
 dependencies:
-  - python>=3.10
+  - python>=3.8
 
 # Setup dependencies.
   - setuptools
@@ -13,6 +13,7 @@ dependencies:
   - pip
 
 # Core dependencies.
+  - scitools-iris
   - libnetcdf
   - vtk>=9.1.0
   - xarray
