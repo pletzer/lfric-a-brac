@@ -9,7 +9,7 @@ from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
 import numpy
 
 INF = float('inf')
-A = 1.0 # 6.371e6 # Earth radius
+A = 1.0 # 6.371e6 # Planet radius
 
 
 class LateralFlux(object):
@@ -77,6 +77,8 @@ class LateralFlux(object):
         dms = self.dims[:-1] + (self.numFaces*mint.NUM_EDGES_PER_QUAD,)
         self.edge_integrated = numpy.empty(dms, numpy.float64)
 
+        deg2rad = numpy.pi/180
+
         self.mai = mint.MultiArrayIter(self.dims[:-1]) # assume last dimension is number of edges
         self.mai.begin()
         for i in range(self.mai.getNumIters()):
@@ -90,9 +92,9 @@ class LateralFlux(object):
             u = self.u[slab]
             v = self.v[slab]
 
-            # convert from m/s to deg/s
-            u *= (180./numpy.pi) / a_cos_lat
-            v *= (180./numpy.pi) / A
+            # conversion factors to get fluxes in m^2/s
+            u *= A * deg2rad
+            v *= a_cos_lat * deg2rad
 
             # compute the edge integrated field
             extensive_data = efc.getFaceData(u.data, v.data, placement=mint.UNIQUE_EDGE_DATA)
@@ -106,8 +108,8 @@ class LateralFlux(object):
 
 
     def set_target_line(self, xy):
-        xyz = numpy.array([(p[0], p[1], 0.) for p in xy])
-        self.pli.computeWeights(xyz)
+        self.xyz = numpy.array([(p[0], p[1], 0.) for p in xy])
+        self.pli.computeWeights(self.xyz)
 
 
     def compute_fluxes(self):
@@ -126,7 +128,9 @@ class LateralFlux(object):
             slab = inds + (slice(0, self.numFaces*mint.NUM_EDGES_PER_QUAD),)
             data = self.edge_integrated[slab]
 
-            # retrieve the flux for this time/elev and store its value
+            # retrieve the flux for this time/elev and store its value. Note that the 
+            # flux will be in m^2/s since u,v have been multiplied by A and A*cos(y),
+            # respectively. 
             self.fluxes[inds] = self.pli.getIntegral(data, placement=mint.CELL_BY_CELL_DATA)
 
             # increment the iterator
@@ -145,6 +149,7 @@ def main(*, filename: Path='./lfric_diag.nc', target_line: str='[(-180., -85.), 
     xy = eval(target_line)
     lf.set_target_line(xy)
 
+    # computes the extensive field from u,v at edge centres
     lf.compute_edge_integrals()
 
     lf.compute_fluxes()
