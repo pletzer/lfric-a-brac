@@ -8,31 +8,40 @@ import iris
 from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
 import numpy
 
-INF = float('inf')
-A = 1.0 # 6.371e6 # Planet radius
+class ExtensiveField(object):
 
-
-class LateralFlux(object):
-
-    def __init__(self, filename):
-
+    def __init__(self, filename: Path, planet_radius: float=1.0):
+        """
+        Constructor
+        :param filename: Ugrid2d NetCDF file name
+        :param planet_radius: radius of the planet
+        """
         self.filename = filename
+        self.planet_radius = planet_radius
         self.grid = mint.Grid()
-        self.pli = mint.PolylineIntegral()
         self.numEdges = 0
         self.numPoints = 0
         self.numFaces = 0
         self.u = None
         self.v = None
+        self.dims = []
 
-    def build(self):
-
+    def build(self, 
+            u_std_name: str="eastward_wind_at_cell_faces", 
+            v_std_name: str="northward_wind_at_cell_faces"):
+        """
+        Build the field's mesh and connectivity
+        :param u_std_name: standard name of the zonal component of the vector field
+        :param v_std_name: standard name of the meridional component of the vector field
+        """
         # get the horizontal velocity components
         with PARSE_UGRID_ON_LOAD.context():
-            self.u = iris.load_cube(self.filename, "eastward_wind_at_cell_faces")
+            self.u = iris.load_cube(self.filename, u_std_name)
             assert(self.u.location == 'edge')
-            self.v = iris.load_cube(self.filename, "northward_wind_at_cell_faces")
+            self.v = iris.load_cube(self.filename, v_std_name)
             assert(self.v.location == 'edge')
+
+        self.dims = self.u.shape
 
         # get the mesh points
         x = self.u.mesh.node_coords.node_x.points
@@ -55,23 +64,61 @@ class LateralFlux(object):
 
         # build the mesh
         self.grid.loadFromUgrid2DData(self.points, self.face2node, self.edge2node)
-        self.pli.setGrid(self.grid)
-        self.pli.buildLocator(numCellsPerBucket=128, periodX=360., enableFolding=False)
+
+
+    def get_grid(self):
+        """
+        Get the grid (or mesh)
+        :return grid object
+        """
+        return self.grid
+
+
+    def get_dims(self):
+        """
+        Get the dimensions of the edge field
+        :return array of sizes
+        """
+        return self.dims
+
+
+    def get_num_faces(self):
+        """
+        Get the number of faces (cells)
+        """
+        return self.numFaces
+
+
+    def get_num_edges(self):
+        """
+        Get the number of edges
+        """
+        return self.numEdges
+
+
+    def get_num_points(self):
+        """
+        Get the number of points
+        """
+        return self.numPoints
 
 
     def compute_edge_integrals(self):
+        """
+        Compute the edge integrals and store the result
+        :return array of size num edges
+        """
 
         # get the mid edge locations
         edge_y = self.u.mesh.edge_coords.edge_y.points
 
         # in radians
         edge_y *= numpy.pi/180.
-        a_cos_lat = A * numpy.cos(edge_y)
+        a_cos_lat = self.planet_radius * numpy.cos(edge_y)
 
         efc = mint.ExtensiveFieldConverter()
         efc.setGrid(self.grid)
 
-        self.dims = self.u.shape
         # assume last dimension is number of edges
         # the extensive field is always cell by cell
         dms = self.dims[:-1] + (self.numFaces*mint.NUM_EDGES_PER_QUAD,)
@@ -79,11 +126,11 @@ class LateralFlux(object):
 
         deg2rad = numpy.pi/180
 
-        self.mai = mint.MultiArrayIter(self.dims[:-1]) # assume last dimension is number of edges
-        self.mai.begin()
-        for i in range(self.mai.getNumIters()):
+        mai = mint.MultiArrayIter(self.dims[:-1]) # assume last dimension is number of edges
+        mai.begin()
+        for _ in range(mai.getNumIters()):
 
-            inds = tuple(self.mai.getIndices())
+            inds = tuple(mai.getIndices())
 
             # assume last dimension is number of edges
             slab = inds + (slice(0, self.numEdges),)
@@ -93,7 +140,7 @@ class LateralFlux(object):
             v = self.v[slab]
 
             # conversion factors to get fluxes in m^2/s
-            u *= A * deg2rad
+            u *= self.planet_radius * deg2rad
             v *= a_cos_lat * deg2rad
 
             # compute the edge integrated field
@@ -104,60 +151,23 @@ class LateralFlux(object):
             # uncomment if want to multiply by dz
             # self.edge_integrated[slce] *= elevs[:]
             # want to multiply by density?
-            self.mai.next()
+            mai.next()
 
-
-    def set_target_line(self, xy):
-        self.xyz = numpy.array([(p[0], p[1], 0.) for p in xy])
-        self.pli.computeWeights(self.xyz)
-
-
-    def compute_fluxes(self):
-
-        # assume last dimension is number of edges
-        self.fluxes = numpy.empty(self.dims[:-1], numpy.float64)
-        print(f'shape of fluxes = {self.fluxes.shape}')
-
-        self.mai.begin()
-        for i in range(self.mai.getNumIters()):
-
-            # get the index set for this iteration
-            inds = tuple(self.mai.getIndices())
-
-            # get the integrated edge values for this time/elev iteration
-            slab = inds + (slice(0, self.numFaces*mint.NUM_EDGES_PER_QUAD),)
-            data = self.edge_integrated[slab]
-
-            # retrieve the flux for this time/elev and store its value. Note that the 
-            # flux will be in m^2/s since u,v have been multiplied by A and A*cos(y),
-            # respectively. 
-            self.fluxes[inds] = self.pli.getIntegral(data, placement=mint.CELL_BY_CELL_DATA)
-
-            # increment the iterator
-            self.mai.next()
-
-    def get_fluxes(self):
-        return self.fluxes
+        return self.edge_integrated
 
 
 ############################################################################
-def main(*, filename: Path='./lfric_diag.nc', target_line: str='[(-180., -85.), (180., 85.)]'):
+def main(*, filename: Path='./lfric_diag.nc'):
 
-    lf = LateralFlux(filename=filename)
-    lf.build()
-
-    xy = eval(target_line)
-    lf.set_target_line(xy)
-
-    # computes the extensive field from u,v at edge centres
-    lf.compute_edge_integrals()
-
-    lf.compute_fluxes()
-    fluxes = lf.get_fluxes()
-    print(f'integrated fluxes: {fluxes}')
+    ef = ExtensiveField(filename=filename)
+    ef.build()
+    edge_integrals = ef.compute_edge_integrals()
+    emin = edge_integrals.min()
+    emax = edge_integrals.max()
+    eavg = edge_integrals.mean()
+    estd = edge_integrals.std()
+    print(f'field edge integrals min, max, mean, std: {emin}, {emax}, {eavg}, {estd}')
 
 
 if __name__ == '__main__':
     defopt.run(main)
-
-
