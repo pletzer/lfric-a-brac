@@ -31,11 +31,19 @@ class Polyline(object):
         deg2rad = numpy.pi/180.0
         lons, lats = self.xy[:, 0]*deg2rad, self.xy[:, 1]*deg2rad # in radians
         rhos = numpy.cos(lats)
+        # radius of one
         xyz[:, 0] = rhos * numpy.cos(lons) # x
         xyz[:, 1] = rhos * numpy.sin(lons) # y
         xyz[:, 2] = numpy.sin(lats)
 
-        angles = numpy.arccos(xyz[1:, :] @ xyz[:-1, :].transpose()) # dot product
+        rr0 = xyz[:-1, :]
+        rr1 = xyz[1:, :]
+        # dot product
+        angles = numpy.arccos(
+            rr0[:, 0]*rr1[:, 0] + \
+            rr0[:, 1]*rr1[:, 1] + \
+            rr0[:, 2]*rr1[:, 2] \
+                )
         return self.planet_radius * angles
 
 

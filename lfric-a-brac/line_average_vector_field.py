@@ -22,7 +22,7 @@ def main(*, filename: Path='./lfric_diag.nc',
 
     lf.compute_fluxes()
     fluxes = lf.get_fluxes()
-    print(f'line averages of the vector field: {fluxes/lengths}')
+    print(f'line averages of the vector field: {fluxes/lengths.sum()}')
 
 
 if __name__ == '__main__':

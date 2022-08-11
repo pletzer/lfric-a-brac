@@ -31,7 +31,6 @@ class LateralFlux(object):
 
         # assume last dimension is number of edges
         self.fluxes = numpy.empty(self.ef.get_dims()[:-1], numpy.float64)
-        print(f'shape of fluxes = {self.fluxes.shape}')
 
         mai = mint.MultiArrayIter(self.ef.get_dims()[:-1]) # assume last dimension is number of edges
         mai.begin()
