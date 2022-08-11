@@ -20,7 +20,10 @@ class LateralFlux(object):
 
 
     def set_target_line(self, xy):
-        self.xyz = numpy.array([(p[0], p[1], 0.) for p in xy])
+        # need to turn into 3D, still working with lons, lats
+        self.xyz = numpy.zeros((xy.shape[0], 3), numpy.float64)
+        self.xyz[:, 0] = xy[:, 0]
+        self.xyz[:, 1] = xy[:, 1]
         self.pli.computeWeights(self.xyz)
 
 
@@ -57,14 +60,17 @@ class LateralFlux(object):
 def main(*, filename: Path='./lfric_diag.nc', target_line: str='[(-180., -85.), (180., 85.)]'):
 
     from extensive_field import ExtensiveField
+    from polyline import Polyline
 
     ef = ExtensiveField(filename=filename)
     ef.build()
     ef.compute_edge_integrals()
 
-    xy = eval(target_line)
+    xy = numpy.array(eval(target_line))
+    line = Polyline(xy, planet_radius=1.0)
+
     lf = LateralFlux(ef)
-    lf.set_target_line(xy)
+    lf.set_target_line(line)
 
     lf.compute_fluxes()
     fluxes = lf.get_fluxes()
