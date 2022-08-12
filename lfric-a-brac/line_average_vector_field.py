@@ -11,11 +11,11 @@ import numpy
 def main(*, filename: Path='./lfric_diag.nc',
             target_line: str='[(-180., -85.), (180., 85.)]',
             u_std_name: str='', v_std_name: str='', 
-            space: Space='w2h'):
+            space: Space=Space.w2h):
 
     ef = ExtensiveField(filename=filename)
     ef.build(u_std_name=u_std_name, v_std_name=v_std_name)
-    ef.compute_edge_integrals(space=space)
+    ef.compute_edge_integrals(space)
 
     xy = numpy.array(eval(target_line))
     line = Polyline(xy, planet_radius=1.0)

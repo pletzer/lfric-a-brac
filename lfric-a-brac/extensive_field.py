@@ -180,11 +180,11 @@ class ExtensiveField(object):
 
 
 ############################################################################
-def main(*, filename: Path='./lfric_diag.nc'):
+def main(*, filename: Path='./lfric_diag.nc', space: Space=Space.w2h):
 
     ef = ExtensiveField(filename=filename)
     ef.build()
-    edge_integrals = ef.compute_edge_integrals()
+    edge_integrals = ef.compute_edge_integrals(space)
     emin = edge_integrals.min()
     emax = edge_integrals.max()
     eavg = edge_integrals.mean()

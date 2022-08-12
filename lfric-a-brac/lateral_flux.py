@@ -34,7 +34,7 @@ class LateralFlux(object):
 
         mai = mint.MultiArrayIter(self.ef.get_dims()[:-1]) # assume last dimension is number of edges
         mai.begin()
-        for i in range(mai.getNumIters()):
+        for _ in range(mai.getNumIters()):
 
             # get the index set for this iteration
             inds = tuple(mai.getIndices())
