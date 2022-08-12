@@ -7,6 +7,7 @@ from pathlib import Path
 import iris
 from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
 import numpy
+from space import Space
 
 class ExtensiveField(object):
 
@@ -34,14 +35,31 @@ class ExtensiveField(object):
         :param u_std_name: standard name of the zonal component of the vector field
         :param v_std_name: standard name of the meridional component of the vector field
         """
+
+        # must have at least one component defined
+        assert(u_std_name or v_std_name)
+
         # get the horizontal velocity components
         with PARSE_UGRID_ON_LOAD.context():
-            self.u = iris.load_cube(self.filename, u_std_name)
-            assert(self.u.location == 'edge')
-            self.v = iris.load_cube(self.filename, v_std_name)
-            assert(self.v.location == 'edge')
 
-        self.dims = self.u.shape
+            if u_std_name:
+                self.u = iris.load_cube(self.filename, u_std_name)
+                assert(self.u.location == 'edge')
+                self.dims = self.u.shape
+            
+            if v_std_name:
+                self.v = iris.load_cube(self.filename, v_std_name)
+                assert(self.v.location == 'edge')
+                self.dims = self.v.shape
+
+        assert(len(self.dims) > 0)
+
+        # set the undfined component to zero (if need be)
+        if not self.u:
+            self.u = numpy.zeros(self.dims, numpy.float64)
+        if not self.v:
+            self.v = numpy.zeros(self.dims, numpy.float64)
+
 
         # get the mesh points
         x = self.u.mesh.node_coords.node_x.points
@@ -103,7 +121,7 @@ class ExtensiveField(object):
         return self.numPoints
 
 
-    def compute_edge_integrals(self):
+    def compute_edge_integrals(self, space: Space):
         """
         Compute the edge integrals and store the result
         :return array of size num edges
@@ -126,6 +144,11 @@ class ExtensiveField(object):
 
         deg2rad = numpy.pi/180
 
+        # choose between W1 and W2h fields
+        getData = efc.getFaceData
+        if space == Space.w1:
+            getData = efc.getEdgeData
+        
         mai = mint.MultiArrayIter(self.dims[:-1]) # assume last dimension is number of edges
         mai.begin()
         for _ in range(mai.getNumIters()):
@@ -144,7 +167,7 @@ class ExtensiveField(object):
             v *= a_cos_lat * deg2rad
 
             # compute the edge integrated field
-            extensive_data = efc.getFaceData(u.data, v.data, placement=mint.UNIQUE_EDGE_DATA)
+            extensive_data = getData(u.data, v.data, placement=mint.UNIQUE_EDGE_DATA)
             slab_cell_by_cell = inds + (slice(0, self.numFaces*mint.NUM_EDGES_PER_QUAD),)
             self.edge_integrated[slab_cell_by_cell] = extensive_data
 
