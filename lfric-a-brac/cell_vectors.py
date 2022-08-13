@@ -1,6 +1,6 @@
 import mint
 from pathlib import Path
-from space import Space
+from function_space import FunctionSpace
 import numpy
 import defopt
 
@@ -24,13 +24,13 @@ class CellVectors(object):
         self.vi.findPoints(self.cell_points)
 
 
-    def get_vectors(self, space: Space=Space.w2h):
+    def get_vectors(self, space: FunctionSpace=FunctionSpace.w2h):
 
         dims = self.ef.get_dims() + (3,)
         res = numpy.empty(dims, numpy.float64)
 
         getVectors = self.vi.getFaceVectors
-        if space == Space.w1:
+        if space == FunctionSpace.w1:
             getVectors = self.vi.getEdgeVectors
 
         mai = mint.MultiArrayIter(self.ef.get_dims()[:-1]) # assume last dimension is number of edges
@@ -54,7 +54,7 @@ class CellVectors(object):
         return res
 
 ############################################################################
-def main(*, filename: Path='./lfric_diag.nc', space: Space=Space.w2h):
+def main(*, filename: Path='./lfric_diag.nc', space: FunctionSpace=FunctionSpace.w2h):
 
     ef = ExtensiveField(filename=filename)
     ef.build()
