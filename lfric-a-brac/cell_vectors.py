@@ -1,8 +1,13 @@
+from attr import field
 import mint
 from pathlib import Path
+
+from traitlets import Bool
 from function_space import FunctionSpace
 import numpy
 import defopt
+from functools import reduce
+from operator import __add__
 
 from extensive_field import ExtensiveField
 
@@ -17,11 +22,43 @@ class CellVectors(object):
         points = grid.getPoints()
         # compute the points in the middle of the cell
         self.cell_points = 0.25*points.sum(axis=1)
+        self.vectors = []
 
 
     def build(self):
         self.vi.buildLocator(numCellsPerBucket=128, periodX=360.0, enableFolding=False)
         self.vi.findPoints(self.cell_points)
+
+
+    def attach_vectors_to_grid(self, time_index=None, z_index=None, space=FunctionSpace.w2h):
+        """
+        Attach interpolated vector values to the grid
+        :param time_index: time index, use None to attach all the time values
+        :param z_index: elevation index, Use None to attach all the elevation values
+        :param space: function space, e.g. FunctionSpace.w2h
+        """
+
+        # may want to get the vectors
+        if len(self.vectors) == 0:
+            self.vectors = self.get_vectors(space=space)
+    
+        dims = self.vectors.shape[:-2] # exclude num_cells and components
+        num_edges = self.vectors.shape[-2]
+        grd = self.ef.get_grid()
+        mai = mint.MultiArrayIter(dims) # assume last dimension is number of edges
+        mai.begin()
+        for _ in range(mai.getNumIters()):
+            inds = tuple(mai.getIndices())
+            varname = 'i_' + reduce(__add__, [f'{index:05d}_' for index in inds])
+            varname += "vectors"
+            all_inds = inds + (slice(0, num_edges), slice(0, 3))
+            grd.attach(varname, self.vectors[all_inds])
+            mai.next()
+
+
+    def save_vtk(self, filename):
+        grd = self.ef.get_grid()
+        grd.dump(filename=filename)
 
 
     def get_vectors(self, space: FunctionSpace=FunctionSpace.w2h):
@@ -51,10 +88,13 @@ class CellVectors(object):
             # increment the iterator
             mai.next()
 
+        self.vectors = res
         return res
 
 ############################################################################
-def main(*, filename: Path='./lfric_diag.nc', space: FunctionSpace=FunctionSpace.w2h):
+def main(*, filename: Path='./lfric_diag.nc',
+            space: FunctionSpace=FunctionSpace.w2h,
+            output: str=''):
 
     ef = ExtensiveField(filename=filename)
     ef.build()
@@ -64,6 +104,10 @@ def main(*, filename: Path='./lfric_diag.nc', space: FunctionSpace=FunctionSpace
     cv.build()
     vecs = cv.get_vectors(space)
     print(vecs)
+
+    if output:
+        cv.attach_vectors_to_grid()
+        cv.save_vtk(output)
 
 if __name__ == '__main__':
     defopt.run(main)
