@@ -28,7 +28,6 @@ class PointVectors(object):
     def set_points(self, points):
         assert(len(points.shape) == 2)
         assert(points.shape[1] == 3) # 3D
-        print(f'*** points={points}')
         self.points = points
 
 
@@ -57,8 +56,8 @@ class PointVectors(object):
             ptIds.SetId(0, i)
             grd.InsertNextCell(vtk.VTK_VERTEX, ptIds)
 
-        num_points = self.points.shape[1]
         ptar.SetNumberOfComponents(3)
+        ptar.SetNumberOfTuples(num_points)
         ptar.SetName('points')
         save = 1
         ptar.SetVoidArray(self.points, num_points*3, save)
@@ -80,10 +79,10 @@ class PointVectors(object):
             all_inds = inds + dst_slab
             va = vtk.vtkDoubleArray()
             va.SetNumberOfComponents(3)
+            va.SetNumberOfTuples(num_points)
             va.SetName(varname)
 
             save = 1
-            print(self.vectors[all_inds])
             va.SetVoidArray(self.vectors[all_inds], num_points*3, save)
 
             # attach to grid
@@ -96,6 +95,7 @@ class PointVectors(object):
 
         # create the writer
         writer = vtk.vtkPolyDataWriter()
+        writer.SetFileVersion(42) # old format so we can read with using VisIt
         writer.SetFileName(filename)
         writer.SetInputData(grd)
         # write
@@ -149,6 +149,8 @@ def main(*, filename: Path='./lfric_diag.nc',
             points: str='[(0., 10.), (20., 30.)]',
             output: str=''):
 
+    from numpy import linspace
+
     ef = ExtensiveField(filename=filename)
     ef.build()
     ef.compute_edge_integrals(space)
@@ -158,7 +160,7 @@ def main(*, filename: Path='./lfric_diag.nc',
     cv.set_points(pts)
     cv.build()
     vecs = cv.get_vectors(space)
-    print(vecs)
+    # print(vecs)
 
     if output:
         cv.save_vtk(output)
