@@ -5,6 +5,7 @@ import defopt
 import mint
 from pathlib import Path
 import numpy
+from function_space import FunctionSpace
 
 class LateralFlux(object):
 
@@ -34,7 +35,7 @@ class LateralFlux(object):
 
         mai = mint.MultiArrayIter(self.ef.get_dims()[:-1]) # assume last dimension is number of edges
         mai.begin()
-        for i in range(mai.getNumIters()):
+        for _ in range(mai.getNumIters()):
 
             # get the index set for this iteration
             inds = tuple(mai.getIndices())
@@ -56,14 +57,16 @@ class LateralFlux(object):
 
 
 ############################################################################
-def main(*, filename: Path='./lfric_diag.nc', target_line: str='[(-180., -85.), (180., 85.)]'):
+def main(*, filename: Path='./lfric_diag.nc',
+         func_space: FunctionSpace=FunctionSpace.w2h,
+         target_line: str='[(-180., -85.), (180., 85.)]'):
 
     from extensive_field import ExtensiveField
     from polyline import Polyline
 
     ef = ExtensiveField(filename=filename)
     ef.build()
-    ef.compute_edge_integrals()
+    ef.compute_edge_integrals(func_space=func_space)
 
     xy = numpy.array(eval(target_line))
     line = Polyline(xy, planet_radius=1.0)
