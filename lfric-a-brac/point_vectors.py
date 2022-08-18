@@ -102,7 +102,7 @@ class PointVectors(object):
         writer.Write()
 
 
-    def get_vectors(self, space: FunctionSpace=FunctionSpace.w2h):
+    def get_vectors(self, func_space: FunctionSpace=FunctionSpace.w2h):
 
         # time, elevation, ... dimensions
         extra_dims = self.ef.get_dims()[:-1]
@@ -113,7 +113,7 @@ class PointVectors(object):
 
         # select the interpolation method according to the function space
         getVectors = self.vi.getFaceVectors
-        if space == FunctionSpace.w1:
+        if func_space == FunctionSpace.w1:
             getVectors = self.vi.getEdgeVectors
 
         dst_layer_slab = (slice(0, num_points), slice(0, 3))
@@ -145,25 +145,28 @@ class PointVectors(object):
 
 ############################################################################
 def main(*, filename: Path='./lfric_diag.nc',
-            space: FunctionSpace=FunctionSpace.w2h,
+            func_space: FunctionSpace=FunctionSpace.w2h,
             points: str='[(0., 10.), (20., 30.)]',
             output: str=''):
 
-    from numpy import linspace
+    from numpy import linspace # required by eval
 
     ef = ExtensiveField(filename=filename)
     ef.build()
-    ef.compute_edge_integrals(space)
+    ef.compute_edge_integrals(func_space)
 
     cv = PointVectors(ef)
     pts = numpy.array([(p[0], p[1], 0.0) for p in eval(points)])
     cv.set_points(pts)
     cv.build()
-    vecs = cv.get_vectors(space)
+    vecs = cv.get_vectors(func_space)
     # print(vecs)
 
     if output:
         cv.save_vtk(output)
+    else:
+        print('vectors:')
+        print(vecs)
 
 if __name__ == '__main__':
     defopt.run(main)

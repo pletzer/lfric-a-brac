@@ -30,17 +30,17 @@ class CellVectors(object):
         self.vi.findPoints(self.cell_points)
 
 
-    def attach_vectors_to_grid(self, time_index=None, z_index=None, space=FunctionSpace.w2h):
+    def attach_vectors_to_grid(self, time_index=None, z_index=None, func_space=FunctionSpace.w2h):
         """
         Attach interpolated vector values to the grid
         :param time_index: time index, use None to attach all the time values
         :param z_index: elevation index, Use None to attach all the elevation values
-        :param space: function space, e.g. FunctionSpace.w2h
+        :param func_space: function space, e.g. FunctionSpace.w2h
         """
 
         # may want to get the vectors
         if len(self.vectors) == 0:
-            self.vectors = self.get_vectors(space=space)
+            self.vectors = self.get_vectors(func_space=func_space)
     
         dims = self.vectors.shape[:-2] # exclude num_cells and components
         num_edges = self.vectors.shape[-2]
@@ -61,13 +61,13 @@ class CellVectors(object):
         grd.dump(filename=filename)
 
 
-    def get_vectors(self, space: FunctionSpace=FunctionSpace.w2h):
+    def get_vectors(self, func_space: FunctionSpace=FunctionSpace.w2h):
 
         dims = self.ef.get_dims() + (3,)
         res = numpy.empty(dims, numpy.float64)
 
         getVectors = self.vi.getFaceVectors
-        if space == FunctionSpace.w1:
+        if func_space == FunctionSpace.w1:
             getVectors = self.vi.getEdgeVectors
 
         mai = mint.MultiArrayIter(self.ef.get_dims()[:-1]) # assume last dimension is number of edges
@@ -93,21 +93,24 @@ class CellVectors(object):
 
 ############################################################################
 def main(*, filename: Path='./lfric_diag.nc',
-            space: FunctionSpace=FunctionSpace.w2h,
+            func_space: FunctionSpace=FunctionSpace.w2h,
             output: str=''):
 
     ef = ExtensiveField(filename=filename)
     ef.build()
-    ef.compute_edge_integrals(space)
+    ef.compute_edge_integrals(func_space)
 
     cv = CellVectors(ef)
     cv.build()
-    vecs = cv.get_vectors(space)
-    print(vecs)
+    vecs = cv.get_vectors(func_space)
 
     if output:
         cv.attach_vectors_to_grid()
         cv.save_vtk(output)
+    else:
+        print('vectors:')
+        print(vecs)
+
 
 if __name__ == '__main__':
     defopt.run(main)
