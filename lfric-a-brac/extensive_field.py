@@ -1,5 +1,5 @@
 #
-# Compute the lateral flux across an irregular boundary
+# Compute the extensive field from the vector field's components on grid edges
 #
 import defopt
 import mint
