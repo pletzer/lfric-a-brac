@@ -9,6 +9,9 @@ import numpy
 # from function_space import FunctionSpace
 import sympy as sym
 
+import sys
+import time
+
 
 def main(*, filename: Path='./cs2.nc',
             # func_space: FunctionSpace=FunctionSpace.w2h,
@@ -41,13 +44,9 @@ def main(*, filename: Path='./cs2.nc',
     x_name, y_name = nc[mesh_name].node_coordinates.split()
     xnodes = nc[x_name][:] * numpy.pi/180.
     ynodes = nc[y_name][:] * numpy.pi/180.
-    print(f'xnodes = {xnodes}')
-    print(f'ynodes = {ynodes}')
-
 
     edge_node_connect_name = nc[mesh_name].edge_node_connectivity
     edge_node_connect = nc[edge_node_connect_name][:] - nc[edge_node_connect_name].start_index
-    print(f'edge_node_connect = {edge_node_connect}')
 
     xbeg = xnodes[edge_node_connect[:, 0]]
     xend = xnodes[edge_node_connect[:, 1]]
@@ -56,28 +55,25 @@ def main(*, filename: Path='./cs2.nc',
     xedges = 0.5*(xbeg + xend) # edge mid point
     yedges = 0.5*(ybeg + yend) # edge mid point
 
-    # evaluate the stream function at the nodes
-    x = xnodes
-    y = ynodes
+    # evaluate the stream function at the beg/end points of the edges
     from numpy import cos, sin, pi
-    psis = eval(stream_func)
-
-
-    # evaluate the vector field at the mid edge points
-    x = xedges
-    y = yedges
+    x = xbeg
+    y = ybeg
+    psibeg = eval(stream_func)
+    x = xend
+    y = yend
+    psiend = eval(stream_func)
+    edge_integrals = psiend - psibeg
 
     num_edges = len(xedges)
     uedges = numpy.zeros((num_edges,), numpy.float64)
     vedges = numpy.zeros((num_edges,), numpy.float64)
 
+    # set the vector components at the mid edge positions
+    x = xedges
+    y = yedges
     uedges[:] = eval(str(u_expr))
     vedges[:] = eval(str(v_expr))
-
-    print(f'x edges: {xedges}')
-    print(f'y edges: {yedges}')
-    print(f'u edges: {uedges}')
-    print(f'v edges: {vedges}')
 
     # create a new dataset
     ds = xarray.Dataset(
@@ -99,7 +95,19 @@ def main(*, filename: Path='./cs2.nc',
              'location': 'edge',
             }
           ),
-        }
+        'edge_integrals': (
+            ['ncs_egde',],
+            edge_integrals.data,
+            {'long_name': 'wind_integrated_at_cell_faces',
+             'units': 'm2 s-1',
+             'mesh': 'cs',
+             'location': 'edge',
+            }
+          )
+        },
+        # global attributes
+        attrs=dict(command=' '.join(sys.argv), time=time.asctime(),
+            stream_function=stream_func, filename=str(filename))
     )
     # add the mesh and the connectivity
     for k in 'cs', 'cs_face_nodes', 'cs_edge_nodes', 'cs_node_x', 'cs_node_y': 
