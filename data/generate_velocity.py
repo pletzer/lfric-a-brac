@@ -12,16 +12,17 @@ import sympy as sym
 
 def main(*, filename: Path='./cs2.nc',
             # func_space: FunctionSpace=FunctionSpace.w2h,
-            stream_func: str='x'):
+            stream_func: str='6371e3 * (sin(y) + cos(y)*cos(x))'):
     
     # vector components
     x = sym.Symbol('x') # lons in radian
     y = sym.Symbol('y') # lats in radian
 
     a = sym.Symbol('A') # planet radius
+    planet_radius = 6371.e3
 
-    u_expr = (sym.diff(stream_func, y) / a).subs(a, 1.0)
-    v_expr = (-sym.diff(stream_func, x) / (a * sym.cos(y))).subs(a, 1.0)
+    u_expr = (sym.diff(stream_func, y) / a).subs(a, planet_radius)
+    v_expr = (-sym.diff(stream_func, x) / (a * sym.cos(y))).subs(a, planet_radius)
 
     # get the edges coordinates
 
@@ -77,6 +78,37 @@ def main(*, filename: Path='./cs2.nc',
     print(f'y edges: {yedges}')
     print(f'u edges: {uedges}')
     print(f'v edges: {vedges}')
+
+    # create a new dataset
+    ds = xarray.Dataset(
+        {'u_in_w2h': (
+            ['ncs_egde',],
+            uedges,
+            {'long_name': 'eastward_wind_at_cell_faces',
+                'units': 'm s-1',
+                'mesh': 'cs',
+                'location': 'edge',
+            }
+          ),
+        'v_in_w2h': (
+            ['ncs_egde',],
+            vedges,
+            {'long_name': 'eastward_wind_at_cell_faces',
+             'units': 'm s-1',
+             'mesh': 'cs',
+             'location': 'edge',
+            }
+          ),
+        }
+    )
+    # add the mesh and the connectivity
+    for k in 'cs', 'cs_face_nodes', 'cs_edge_nodes', 'cs_node_x', 'cs_node_y': 
+        ds[k] = nc[k]
+
+    filename_out = str(filename).split('.nc')[0] + '_wind.nc'
+    print(f'saving the wind components in file {filename_out}')
+    ds.to_netcdf(filename_out)
+
 
 if __name__ == '__main__':
     defopt.run(main)
