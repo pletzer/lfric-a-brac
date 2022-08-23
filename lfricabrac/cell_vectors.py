@@ -3,13 +3,13 @@ import mint
 from pathlib import Path
 
 from traitlets import Bool
-from function_space import FunctionSpace
+from . import FunctionSpace
 import numpy
 import defopt
 from functools import reduce
 from operator import __add__
 
-from extensive_field import ExtensiveField
+from . import ExtensiveField
 
 class CellVectors(object):
 

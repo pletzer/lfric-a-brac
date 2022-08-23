@@ -1,11 +1,10 @@
 from pathlib import Path
-from extensive_field import ExtensiveField
-from polyline import Polyline
-from lateral_flux import LateralFlux
-from function_space import FunctionSpace
+from . import ExtensiveField
+from . import Polyline
+from . import LateralFlux
+from . import FunctionSpace
 import defopt
 import numpy
-
 
 
 def main(*, filename: Path='./lfric_diag.nc',

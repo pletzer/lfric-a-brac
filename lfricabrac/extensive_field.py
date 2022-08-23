@@ -7,7 +7,7 @@ from pathlib import Path
 import iris
 from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
 import numpy
-from function_space import FunctionSpace
+from . import FunctionSpace
 
 class ExtensiveField(object):
 
