@@ -24,12 +24,13 @@ class Polyline(object):
     def get_lengths(self):
         """
         Get the horizontal lengths of each polyline segment
+        :returns: array of short circle lengths
         """
         # Cartesian points
         num_points = self.xy.shape[0]
         xyz = numpy.zeros((num_points, 3), numpy.float64)
         deg2rad = numpy.pi/180.0
-        
+
         lons, lats = self.xy[:, 0]*deg2rad, self.xy[:, 1]*deg2rad # in radians
 
         # compute the Cartesian coords
