@@ -1,0 +1,25 @@
+[project]
+name = "lfricabrac"
+version = "0.1"
+description = "A set of tools and scripts to compute flux integrals frorm LFRic output data"
+authors = [
+    {name = "Alexander Pletzer"}
+]
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["flux", "line integral", "mimetic",]
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "python-mint",
+    "scitools-iris",
+    "vtk",
+    "defopt",
+    "xarray",]
+
+[build-system]
+requires = ["setuptools >= 62.3.0",]
+
+
