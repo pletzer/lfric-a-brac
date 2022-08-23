@@ -6,6 +6,8 @@ import mint
 from pathlib import Path
 import numpy
 from . import FunctionSpace
+from . import ExtensiveField
+from . import Polyline
 
 class LateralFlux(object):
 
@@ -60,9 +62,6 @@ class LateralFlux(object):
 def main(*, filename: Path='./lfric_diag.nc',
          func_space: FunctionSpace=FunctionSpace.W2H,
          target_line: str='[(-180., -85.), (180., 85.)]'):
-
-    from lfricabrac import ExtensiveField
-    from lfricabrac import Polyline
 
     ef = ExtensiveField(filename=filename)
     ef.build()

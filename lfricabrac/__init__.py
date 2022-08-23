@@ -8,8 +8,9 @@ __all__ = ('cell_vectors', 'point_vectors', 'extensive_field', 'lateral_flux',
 
 
 
-# from .cell_vectors import CellVectors
-# from .point_vectors import PointVectors
+# the order is important here
+from .polyline import Polyline
 from .extensive_field import ExtensiveField
 from .lateral_flux import LateralFlux
-from .polyline import Polyline
+from .point_vectors import PointVectors
+from .cell_vectors import CellVectors

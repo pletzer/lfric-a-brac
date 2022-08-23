@@ -145,13 +145,12 @@ def main(*, filename: Path='./lfric_diag.nc',
             points: str='[(0., 10.), (20., 30.)]',
             output: str=''):
 
-    from numpy import linspace # required by eval
-
     ef = ExtensiveField(filename=filename)
     ef.build()
     ef.compute_edge_integrals(func_space)
 
     cv = PointVectors(ef)
+    from numpy import linspace # required by eval
     pts = numpy.array([(p[0], p[1], 0.0) for p in eval(points)])
     cv.set_points(pts)
     cv.build()
