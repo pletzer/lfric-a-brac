@@ -7,6 +7,7 @@ from pathlib import Path
 import iris
 from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
 import numpy
+
 from . import FunctionSpace
 
 class ExtensiveField(object):
@@ -124,7 +125,7 @@ class ExtensiveField(object):
     def compute_edge_integrals(self, func_space: FunctionSpace):
         """
         Compute the edge integrals and store the result
-        :param func_space: function space, either FunctionSpace.w1 or FunctionSpace.w2h
+        :param func_space: function space, either FunctionSpace.W1 or FunctionSpace.W2H
         :return array of size num edges
         """
 
@@ -147,7 +148,7 @@ class ExtensiveField(object):
 
         # choose between W1 and W2h fields
         getData = efc.getFaceData
-        if func_space == FunctionSpace.w1:
+        if func_space == FunctionSpace.W1:
             getData = efc.getEdgeData
         
         mai = mint.MultiArrayIter(self.dims[:-1]) # assume last dimension is number of edges
@@ -182,7 +183,7 @@ class ExtensiveField(object):
 
 ############################################################################
 def main(*, filename: Path='./lfric_diag.nc',
-            func_space: FunctionSpace=FunctionSpace.w2h):
+            func_space: FunctionSpace=FunctionSpace.W2H):
 
     ef = ExtensiveField(filename=filename)
     ef.build()

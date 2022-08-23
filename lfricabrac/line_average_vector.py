@@ -1,16 +1,16 @@
 from pathlib import Path
+import defopt
+import numpy
 from . import ExtensiveField
 from . import Polyline
 from . import LateralFlux
 from . import FunctionSpace
-import defopt
-import numpy
 
 
 def main(*, filename: Path='./lfric_diag.nc',
             target_line: str='[(-180., -85.), (180., 85.)]',
             u_std_name: str='', v_std_name: str='', 
-            func_space: FunctionSpace=FunctionSpace.w2h):
+            func_space: FunctionSpace=FunctionSpace.W2H):
 
     ef = ExtensiveField(filename=filename)
     ef.build(u_std_name=u_std_name, v_std_name=v_std_name)

@@ -29,7 +29,10 @@ class Polyline(object):
         num_points = self.xy.shape[0]
         xyz = numpy.zeros((num_points, 3), numpy.float64)
         deg2rad = numpy.pi/180.0
+        
         lons, lats = self.xy[:, 0]*deg2rad, self.xy[:, 1]*deg2rad # in radians
+
+        # compute the Cartesian coords
         rhos = numpy.cos(lats)
         # radius of one
         xyz[:, 0] = rhos * numpy.cos(lons) # x

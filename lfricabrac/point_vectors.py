@@ -1,16 +1,12 @@
-from tarfile import ExtractError
-from attr import field
 import mint
 from pathlib import Path
 import vtk
-
-from traitlets import Bool
-from . import FunctionSpace
 import numpy
 import defopt
 from functools import reduce
 from operator import __add__
 
+from . import FunctionSpace
 from . import ExtensiveField
 
 class PointVectors(object):
@@ -102,7 +98,7 @@ class PointVectors(object):
         writer.Write()
 
 
-    def get_vectors(self, func_space: FunctionSpace=FunctionSpace.w2h):
+    def get_vectors(self, func_space: FunctionSpace=FunctionSpace.W2H):
 
         # time, elevation, ... dimensions
         extra_dims = self.ef.get_dims()[:-1]
@@ -113,7 +109,7 @@ class PointVectors(object):
 
         # select the interpolation method according to the function space
         getVectors = self.vi.getFaceVectors
-        if func_space == FunctionSpace.w1:
+        if func_space == FunctionSpace.W1:
             getVectors = self.vi.getEdgeVectors
 
         dst_layer_slab = (slice(0, num_points), slice(0, 3))
@@ -145,7 +141,7 @@ class PointVectors(object):
 
 ############################################################################
 def main(*, filename: Path='./lfric_diag.nc',
-            func_space: FunctionSpace=FunctionSpace.w2h,
+            func_space: FunctionSpace=FunctionSpace.W2H,
             points: str='[(0., 10.), (20., 30.)]',
             output: str=''):
 

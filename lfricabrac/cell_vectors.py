@@ -1,13 +1,11 @@
-from attr import field
 import mint
 from pathlib import Path
-
-from traitlets import Bool
-from . import FunctionSpace
 import numpy
 import defopt
 from functools import reduce
 from operator import __add__
+
+from . import FunctionSpace
 
 from . import ExtensiveField
 
@@ -30,12 +28,12 @@ class CellVectors(object):
         self.vi.findPoints(self.cell_points)
 
 
-    def attach_vectors_to_grid(self, time_index=None, z_index=None, func_space=FunctionSpace.w2h):
+    def attach_vectors_to_grid(self, time_index=None, z_index=None, func_space=FunctionSpace.W2H):
         """
         Attach interpolated vector values to the grid
         :param time_index: time index, use None to attach all the time values
         :param z_index: elevation index, Use None to attach all the elevation values
-        :param func_space: function space, e.g. FunctionSpace.w2h
+        :param func_space: FunctionSpace.W2H or FunctionSpace.W1
         """
 
         # may want to get the vectors
@@ -61,13 +59,13 @@ class CellVectors(object):
         grd.dump(filename=filename)
 
 
-    def get_vectors(self, func_space: FunctionSpace=FunctionSpace.w2h):
+    def get_vectors(self, func_space: FunctionSpace=FunctionSpace.W2H):
 
         dims = self.ef.get_dims() + (3,)
         res = numpy.empty(dims, numpy.float64)
 
         getVectors = self.vi.getFaceVectors
-        if func_space == FunctionSpace.w1:
+        if func_space == FunctionSpace.W1:
             getVectors = self.vi.getEdgeVectors
 
         mai = mint.MultiArrayIter(self.ef.get_dims()[:-1]) # assume last dimension is number of edges
@@ -93,7 +91,7 @@ class CellVectors(object):
 
 ############################################################################
 def main(*, filename: Path='./lfric_diag.nc',
-            func_space: FunctionSpace=FunctionSpace.w2h,
+            func_space: FunctionSpace=FunctionSpace.W2H,
             output: str=''):
 
     ef = ExtensiveField(filename=filename)
