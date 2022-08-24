@@ -89,7 +89,7 @@ def main(*, filename: Path='./cs2.nc',
         'v_in_w2h': (
             ['ncs_egde',],
             vedges,
-            {'long_name': 'eastward_wind_at_cell_faces',
+            {'long_name': 'northward_wind_at_cell_faces',
              'units': 'm s-1',
              'mesh': 'cs',
              'location': 'edge',

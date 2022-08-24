@@ -17,4 +17,3 @@ def test_equator():
     print(f'length = {length}')
     expected_length = 2*numpy.pi*earth_radius
     assert(abs(length - expected_length) < 1.e-10)
-

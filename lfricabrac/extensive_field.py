@@ -55,7 +55,7 @@ class ExtensiveField(object):
 
         assert(len(self.dims) > 0)
 
-        # set the undfined component to zero (if need be)
+        # set the undefined component to zero (if need be)
         if not self.u:
             self.u = numpy.zeros(self.dims, numpy.float64)
         if not self.v:
