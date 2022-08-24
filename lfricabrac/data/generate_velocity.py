@@ -6,7 +6,7 @@ from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
 import xarray # for the time being
 
 import numpy
-# from function_space import FunctionSpace
+from lfricabrac import FunctionSpace
 import sympy as sym
 
 import sys
@@ -14,7 +14,7 @@ import time
 
 
 def main(*, filename: Path='./cs2.nc',
-            # func_space: FunctionSpace=FunctionSpace.w2h,
+            func_space: FunctionSpace=FunctionSpace.W2H,
             stream_func: str='6371e3 * (sin(y) + cos(y)*cos(x))'):
     
     # vector components
@@ -24,8 +24,15 @@ def main(*, filename: Path='./cs2.nc',
     a = sym.Symbol('A') # planet radius
     planet_radius = 6371.e3
 
-    u_expr = (sym.diff(stream_func, y) / a).subs(a, planet_radius)
-    v_expr = (-sym.diff(stream_func, x) / (a * sym.cos(y))).subs(a, planet_radius)
+
+    if func_space == FunctionSpace.W2H:
+      u_expr = (sym.diff(stream_func, y) / a).subs(a, planet_radius)
+      v_expr = (-sym.diff(stream_func, x) / (a * sym.cos(y))).subs(a, planet_radius)
+    elif func_space == FunctionSpace.W1:
+      u_expr = (sym.diff(stream_func, x) / a).subs(a, planet_radius)
+      v_expr = (sym.diff(stream_func, y) / (a * sym.cos(y))).subs(a, planet_radius)
+    else:
+      raise(RuntimeError, "Invalid function space")
 
     # get the edges coordinates
 
