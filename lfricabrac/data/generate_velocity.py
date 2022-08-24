@@ -110,7 +110,7 @@ def main(*, filename: Path='./cs2.nc',
             stream_function=stream_func, filename=str(filename))
     )
     # add the mesh and the connectivity
-    for k in 'cs', 'cs_face_nodes', 'cs_edge_nodes', 'cs_node_x', 'cs_node_y': 
+    for k in nc: 
         ds[k] = nc[k]
 
     filename_out = str(filename).split('.nc')[0] + '_wind.nc'
