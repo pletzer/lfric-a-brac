@@ -15,6 +15,6 @@ def test_cs2():
     edge_integrals = ef.compute_edge_integrals(func_space=FunctionSpace.W2H)
     with PARSE_UGRID_ON_LOAD.context():
         edge_integrals_exact = iris.load_cube(filename,
-                               long_name="wind_integrated_at_cell_facespyets")
+                               long_name="wind_integrated_at_cell_faces")
     diff = numpy.fabs(edge_integrals - edge_integrals_exact)
     assert(diff < 1.e-3)
