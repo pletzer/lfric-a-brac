@@ -91,6 +91,7 @@ def main(*, filename: Path='./cs2.nc',
                 'units': 'm s-1',
                 'mesh': 'cs',
                 'location': 'edge',
+                'coordinates': 'cs_edge_y cs_edge_x',
             }
           ),
         'v_in_w2h': (
@@ -100,6 +101,7 @@ def main(*, filename: Path='./cs2.nc',
              'units': 'm s-1',
              'mesh': 'cs',
              'location': 'edge',
+             'coordinates': 'cs_edge_y cs_edge_x',
             }
           ),
         'edge_integrals': (
@@ -109,8 +111,25 @@ def main(*, filename: Path='./cs2.nc',
              'units': 'm2 s-1',
              'mesh': 'cs',
              'location': 'edge',
+             'coordinates': 'cs_edge_y cs_edge_x',
             }
-          )
+          ),
+        'cs_edge_x': (
+            ['ncs_egde',],
+            xedges.data,
+            {'standard_name': 'longitude',
+             'long_name': 'Characteristic longitude of mesh edges.',
+             'units': 'degrees_east',
+            }
+            ),
+        'cs_edge_y': (
+            ['ncs_egde',],
+            yedges.data,
+            {'standard_name': 'latitude',
+             'long_name': 'Characteristic latitude of mesh edges.',
+             'units': 'degrees_north',
+            }
+            ),
         },
         # global attributes
         attrs=dict(command=' '.join(sys.argv), time=time.asctime(),
