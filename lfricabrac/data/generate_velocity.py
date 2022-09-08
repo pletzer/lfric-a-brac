@@ -85,7 +85,7 @@ def main(*, filename: Path='./cs2.nc',
     # create a new dataset
     ds = xarray.Dataset(
         {'u_in_w2h': (
-            ['ncs_egde',],
+            ['ncs_edge',],
             uedges,
             {'long_name': 'eastward_wind_at_cell_faces',
                 'units': 'm s-1',
@@ -95,7 +95,7 @@ def main(*, filename: Path='./cs2.nc',
             }
           ),
         'v_in_w2h': (
-            ['ncs_egde',],
+            ['ncs_edge',],
             vedges,
             {'long_name': 'northward_wind_at_cell_faces',
              'units': 'm s-1',
@@ -105,7 +105,7 @@ def main(*, filename: Path='./cs2.nc',
             }
           ),
         'edge_integrals': (
-            ['ncs_egde',],
+            ['ncs_edge',],
             edge_integrals.data,
             {'long_name': 'wind_integrated_at_cell_faces',
              'units': 'm2 s-1',
@@ -115,7 +115,7 @@ def main(*, filename: Path='./cs2.nc',
             }
           ),
         'cs_edge_x': (
-            ['ncs_egde',],
+            ['ncs_edge',],
             xedges.data,
             {'standard_name': 'longitude',
              'long_name': 'Characteristic longitude of mesh edges.',
@@ -123,7 +123,7 @@ def main(*, filename: Path='./cs2.nc',
             }
             ),
         'cs_edge_y': (
-            ['ncs_egde',],
+            ['ncs_edge',],
             yedges.data,
             {'standard_name': 'latitude',
              'long_name': 'Characteristic latitude of mesh edges.',
@@ -135,9 +135,14 @@ def main(*, filename: Path='./cs2.nc',
         attrs=dict(command=' '.join(sys.argv), time=time.asctime(),
             stream_function=stream_func, filename=str(filename))
     )
+
+
     # add the mesh and the connectivity
     for k in nc: 
         ds[k] = nc[k]
+
+    # add the edge_coordinates attribute to the mesh
+    ds['cs'].attrs['edge_coordinates'] = 'cs_edge_x cs_edge_y'
 
     filename_out = str(filename).split('.nc')[0] + '_wind.nc'
     print(f'saving the wind components in file {filename_out}')
