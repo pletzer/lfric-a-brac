@@ -181,6 +181,38 @@ class ExtensiveField(object):
         return self.edge_integrated
 
 
+    def get_from_unique_edge_data(self, unique_edge_data):
+        """
+        Get the cell by cell data from the unique edge data
+        :param unique_edge_data: array, last dimension should be num_edges
+        :returns data with last dimension num_cells * mint.NUM_EDGES_PER_QUAD
+        """
+
+        efc = mint.ExtensiveFieldConverter()
+        efc.setGrid(self.grid)
+
+        res = numpy.empty(self.dims[:-1] + (self.numFaces*mint.NUM_EDGES_PER_QUAD,),
+                numpy.float64)
+
+        mai = mint.MultiArrayIter(self.dims[:-1]) # assume last dimension is number of edges
+        mai.begin()
+        for _ in range(mai.getNumIters()):
+
+            inds = tuple(mai.getIndices())
+
+            # assume last dimension is number of edges
+            slab_ue = inds + (slice(0, self.numEdges),)
+            slab_cbc = inds + (slice(0, self.numFaces*mint.NUM_EDGES_PER_QUAD),)
+
+            # read a slab of data
+            ue_data_slice = unique_edge_data[slab_ue]
+            res[slab_cbc] = efc.getCellByCellDataFromUniqueEdgeData(ue_data_slice)
+
+            mai.next()
+
+        return res
+
+
 ############################################################################
 def main(*, filename: Path='./lfric_diag.nc',
             func_space: FunctionSpace=FunctionSpace.W2H):

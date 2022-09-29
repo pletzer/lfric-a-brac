@@ -14,6 +14,17 @@ def test_cs2():
              v_std_name="northward_wind_at_cell_faces")
     edge_integrals = ef.compute_edge_integrals(func_space=FunctionSpace.W2H)
     with PARSE_UGRID_ON_LOAD.context():
-        edge_integrals_exact = iris.load_cube(filename, "wind_integrated_at_cell_faces")
-    diff = numpy.fabs(edge_integrals - edge_integrals_exact)
+        # defined on unique edge Ids
+        edge_integrals_exact = ef.get_from_unique_edge_data(
+            iris.load_cube(filename,
+            "wind_integrated_at_cell_faces").data
+        )
+
+    print(f'edge_integrals_exact = {edge_integrals_exact}')
+    print(f'edge_integrals = {edge_integrals}')
+    print(f'shapes: {edge_integrals_exact.shape} {edge_integrals.shape}')
+    diff = numpy.fabs(edge_integrals - edge_integrals_exact).sum()
     assert(diff < 1.e-3)
+
+if __name__ == '__main__':
+    test_cs2()
