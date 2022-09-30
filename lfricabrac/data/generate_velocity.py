@@ -49,8 +49,9 @@ def main(*, filename: Path='./cs2.nc',
     mesh_name = 'cs'
 
     x_name, y_name = nc[mesh_name].node_coordinates.split()
-    xnodes = nc[x_name][:] * numpy.pi/180.
-    ynodes = nc[y_name][:] * numpy.pi/180.
+    deg2rad =  numpy.pi/180.
+    xnodes = nc[x_name][:] * deg2rad
+    ynodes = nc[y_name][:] * deg2rad
 
     edge_node_connect_name = nc[mesh_name].edge_node_connectivity
     edge_node_connect = nc[edge_node_connect_name][:] - nc[edge_node_connect_name].start_index
@@ -81,6 +82,9 @@ def main(*, filename: Path='./cs2.nc',
     y = yedges
     uedges[:] = eval(str(u_expr))
     vedges[:] = eval(str(v_expr))
+
+    print(uedges)
+    print(vedges)
 
     # create a new dataset
     ds = xarray.Dataset(
@@ -151,11 +155,4 @@ def main(*, filename: Path='./cs2.nc',
 
 if __name__ == '__main__':
     defopt.run(main)
-
-
-
-
-
-
-
 

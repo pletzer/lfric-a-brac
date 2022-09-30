@@ -8,7 +8,8 @@ from lfricabrac import ExtensiveField, FunctionSpace
 DATA_DIR = Path(__file__).absolute().parent.parent / Path('data')
 
 def test_cs2():
-    filename = DATA_DIR / 'cs2_wind.nc'
+    
+    filename = DATA_DIR / 'cs128_wind.nc'
     ef = ExtensiveField(filename, planet_radius=6371e3)
     ef.build(u_std_name="eastward_wind_at_cell_faces",
              v_std_name="northward_wind_at_cell_faces")
@@ -20,11 +21,10 @@ def test_cs2():
             "wind_integrated_at_cell_faces").data
         )
 
-    print(f'edge_integrals_exact = {edge_integrals_exact}')
-    print(f'edge_integrals = {edge_integrals}')
-    print(f'shapes: {edge_integrals_exact.shape} {edge_integrals.shape}')
-    diff = numpy.fabs(edge_integrals - edge_integrals_exact).sum()
-    assert(diff < 1.e-3)
+    print(f'edge_integrals_exact min={edge_integrals_exact.min():.3e} max={edge_integrals_exact.max():.3e}')
+    print(f'edge_integrals min={edge_integrals.min():.3e} max={edge_integrals.max():.3e}')
+    mean_diff = numpy.fabs(edge_integrals - edge_integrals_exact).sum().mean()
+    assert(mean_diff < 1.e-3)
 
 if __name__ == '__main__':
     test_cs2()
