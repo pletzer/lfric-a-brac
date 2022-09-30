@@ -74,15 +74,19 @@ class ExtensiveField(object):
         # note: need to promote 64 bit integers
         self.face2node = numpy.array(self.u.mesh.face_node_connectivity.indices_by_location(),
                                      numpy.uint64)
+        self.face2node -= self.u.mesh.face_node_connectivity.start_index
         self.numFaces = self.face2node.shape[0]
         
         # get the edge-node connectivity
         self.edge2node = numpy.array(self.u.mesh.edge_node_connectivity.indices_by_location(),
                                     numpy.uint64)
+        self.edge2node -= self.u.mesh.edge_node_connectivity.start_index
         self.numEdges = self.edge2node.shape[0]
 
         # build the mesh
+        self.grid.setFlags(fixLonAcrossDateline=1, averageLonAtPole=1, degrees=True)
         self.grid.loadFromUgrid2DData(self.points, self.face2node, self.edge2node)
+        # self.grid.dump('grid.vtk')
 
 
     def get_grid(self):
@@ -144,7 +148,7 @@ class ExtensiveField(object):
         dms = self.dims[:-1] + (self.numFaces*mint.NUM_EDGES_PER_QUAD,)
         self.edge_integrated = numpy.empty(dms, numpy.float64)
 
-        deg2rad = numpy.pi/180
+        deg2rad = numpy.pi/180.
 
         # choose between W1 and W2h fields
         getData = efc.getFaceData
