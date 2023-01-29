@@ -109,6 +109,10 @@ def main(*, filename: Path='./cs2.nc',
     print(uedges)
     print(vedges)
 
+    # rad -> deg
+    xedges /= deg2rad
+    yedges /= deg2rad
+
     # create a new dataset
     ds = xarray.Dataset(
         {'u_in_w2h': (
@@ -143,7 +147,7 @@ def main(*, filename: Path='./cs2.nc',
           ),
         'cs_edge_x': (
             ['ncs_edge',],
-            xedges.data / deg2rad,
+            xedges.data,
             {'standard_name': 'longitude',
              'long_name': 'Characteristic longitude of mesh edges.',
              'units': 'degrees_east',
@@ -151,7 +155,7 @@ def main(*, filename: Path='./cs2.nc',
             ),
         'cs_edge_y': (
             ['ncs_edge',],
-            yedges.data / deg2rad,
+            yedges.data,
             {'standard_name': 'latitude',
              'long_name': 'Characteristic latitude of mesh edges.',
              'units': 'degrees_north',
