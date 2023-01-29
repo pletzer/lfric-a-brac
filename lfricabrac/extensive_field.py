@@ -86,8 +86,7 @@ class ExtensiveField(object):
         # build the mesh
         self.grid.setFlags(fixLonAcrossDateline=1, averageLonAtPole=1, degrees=True)
         self.grid.loadFromUgrid2DData(self.points, self.face2node, self.edge2node)
-        # self.grid.dump('grid.vtk')
-
+        
 
     def get_grid(self):
         """
@@ -126,18 +125,34 @@ class ExtensiveField(object):
         return self.numPoints
 
 
+    def getU(self):
+        """
+        Get the u-component of the vector field
+        :returns array
+        """
+        return self.u.data
+
+    def getV(self):
+        """
+        Get the v-component of the vector field
+        :returns array
+        """
+        return self.v.data
+
+
     def compute_edge_integrals(self, func_space: FunctionSpace):
         """
         Compute the edge integrals and store the result
         :param func_space: function space, either FunctionSpace.W1 or FunctionSpace.W2H
-        :return array of size num edges
+        :returns array of size num edges
         """
+        deg2rad = numpy.pi/180.
 
         # get the mid edge locations
         edge_y = self.u.mesh.edge_coords.edge_y.points
 
         # in radians
-        edge_y *= numpy.pi/180.
+        edge_y *= deg2rad
         a_cos_lat = self.planet_radius * numpy.cos(edge_y)
 
         efc = mint.ExtensiveFieldConverter()
@@ -148,9 +163,7 @@ class ExtensiveField(object):
         dms = self.dims[:-1] + (self.numFaces*mint.NUM_EDGES_PER_QUAD,)
         self.edge_integrated = numpy.empty(dms, numpy.float64)
 
-        deg2rad = numpy.pi/180.
-
-        # choose between W1 and W2h fields
+        # choose the method depending on whether W1 or W2h
         getData = efc.getFaceData
         if func_space == FunctionSpace.W1:
             getData = efc.getEdgeData
@@ -174,6 +187,8 @@ class ExtensiveField(object):
 
             # compute the edge integrated field
             extensive_data = getData(u.data, v.data, placement=mint.UNIQUE_EDGE_DATA)
+
+            # fill in the slice
             slab_cell_by_cell = inds + (slice(0, self.numFaces*mint.NUM_EDGES_PER_QUAD),)
             self.edge_integrated[slab_cell_by_cell] = extensive_data
 

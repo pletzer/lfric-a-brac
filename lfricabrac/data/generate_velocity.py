@@ -15,7 +15,14 @@ import time
 
 def main(*, filename: Path='./cs2.nc',
             func_space: FunctionSpace=FunctionSpace.W2H,
-            stream_func: str='6371e3 * (sin(y) + cos(y)*cos(x))'):
+            scalar_func: str='A * cos(y)*cos(x)'):
+
+    """
+    Generate a vector field from a scalar function
+    :param Path filename: Ugrid file containing the mesh coordinates
+    :param FunctionSpace func_space: either FunctionSpace.W2H or FunctionSpace.W1
+    :param str scalar_func: either the stream function (if FunctionSpace.W2H) or the potential function (if FunctionSpace.W1). Should be a function of x, y
+    """
     
     # vector components
     x = sym.Symbol('x') # lons in radian
@@ -26,24 +33,13 @@ def main(*, filename: Path='./cs2.nc',
 
 
     if func_space == FunctionSpace.W2H:
-      u_expr = (sym.diff(stream_func, y) / a).subs(a, planet_radius)
-      v_expr = (-sym.diff(stream_func, x) / (a * sym.cos(y))).subs(a, planet_radius)
+      u_expr = (sym.diff(scalar_func, y) / a).subs(a, planet_radius)
+      v_expr = (-sym.diff(scalar_func, x) / (a * sym.cos(y))).subs(a, planet_radius)
     elif func_space == FunctionSpace.W1:
-      u_expr = (sym.diff(stream_func, x) / a).subs(a, planet_radius)
-      v_expr = (sym.diff(stream_func, y) / (a * sym.cos(y))).subs(a, planet_radius)
+      u_expr = (sym.diff(scalar_func, x) / a).subs(a, planet_radius)
+      v_expr = (sym.diff(scalar_func, y) / (a * sym.cos(y))).subs(a, planet_radius)
     else:
       raise(RuntimeError, "Invalid function space")
-
-    # get the edges coordinates
-
-
-    # we should be using Iris to do this....
-
-    # with PARSE_UGRID_ON_LOAD.context():
-        
-    #     grid = iris.experimental.ugrid.load.load_mesh(filename, var_name='cs')
-    #     or 
-    #     grid_cube = iris.load(filename)
 
     nc = xarray.open_dataset(filename)
     mesh_name = 'cs'
@@ -60,17 +56,20 @@ def main(*, filename: Path='./cs2.nc',
     xend = xnodes[edge_node_connect[:, 1]]
     ybeg = ynodes[edge_node_connect[:, 0]]
     yend = ynodes[edge_node_connect[:, 1]]
+
+    # get the edges coordinates, WRONG, NEED TO ACCOUNT FOR PERIODICITY!!!!!!
     xedges = 0.5*(xbeg + xend) # edge mid point
     yedges = 0.5*(ybeg + yend) # edge mid point
 
     # evaluate the stream function at the beg/end points of the edges
     from numpy import cos, sin, pi
+    A = planet_radius
     x = xbeg
     y = ybeg
-    psibeg = eval(stream_func)
+    psibeg = eval(scalar_func)
     x = xend
     y = yend
-    psiend = eval(stream_func)
+    psiend = eval(scalar_func)
     edge_integrals = psiend - psibeg
 
     num_edges = len(xedges)
@@ -137,7 +136,7 @@ def main(*, filename: Path='./cs2.nc',
         },
         # global attributes
         attrs=dict(command=' '.join(sys.argv), time=time.asctime(),
-            stream_function=stream_func, filename=str(filename))
+            scalar_function=scalar_func, filename=str(filename))
     )
 
 
