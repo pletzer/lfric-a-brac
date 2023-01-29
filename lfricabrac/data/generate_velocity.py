@@ -57,11 +57,35 @@ def main(*, filename: Path='./cs2.nc',
     ybeg = ynodes[edge_node_connect[:, 0]]
     yend = ynodes[edge_node_connect[:, 1]]
 
-    # get the edges coordinates, WRONG, NEED TO ACCOUNT FOR PERIODICITY!!!!!!
-    xedges = 0.5*(xbeg + xend) # edge mid point
-    yedges = 0.5*(ybeg + yend) # edge mid point
+    # # get the edges coordinates, WRONG, NEED TO ACCOUNT FOR PERIODICITY!!!!!!
+    # xedges = 0.5*(xbeg + xend) # edge mid point
+    # yedges = 0.5*(ybeg + yend) # edge mid point
 
-    # evaluate the stream function at the beg/end points of the edges
+    nedges = len(xbeg)
+
+    # We need to be careful when computing the mid edge coordinates due the 
+    # periodicity. We compute the mif edge poisition first in cartesian coords
+    # then back to lon-lat.
+    xyz_beg = numpy.zeros((nedges, 3), numpy.float64)
+    xyz_beg[:, 0] = numpy.cos(ybeg) * numpy.cos(xbeg)
+    xyz_beg[:, 1] = numpy.cos(ybeg) * numpy.sin(xbeg)
+    xyz_beg[:, 2] = numpy.sin(ybeg)
+
+    xyz_end = numpy.zeros((nedges, 3), numpy.float64)
+    xyz_end[:, 0] = numpy.cos(yend) * numpy.cos(xend)
+    xyz_end[:, 1] = numpy.cos(yend) * numpy.sin(xend)
+    xyz_end[:, 2] = numpy.sin(yend)
+
+    # edge mid-points
+    xyz_edges = 0.5*(xyz_beg + xyz_end)
+
+    # lons
+    xedges = numpy.arctan2(xyz_edges[:, 1], xyz_edges[:, 0]) # rads
+    # lats
+    rhoedges = numpy.sqrt( xyz_edges[:, 0]*xyz_edges[:, 0] + xyz_edges[:, 1]*xyz_edges[:, 1] )
+    yedges = numpy.arctan2(xyz_edges[:, 2], rhoedges) # rads
+
+    # evaluate the scalarfunction at the beg/end points of the edges
     from numpy import cos, sin, pi
     A = planet_radius
     x = xbeg
@@ -119,7 +143,7 @@ def main(*, filename: Path='./cs2.nc',
           ),
         'cs_edge_x': (
             ['ncs_edge',],
-            xedges.data,
+            xedges.data / deg2rad,
             {'standard_name': 'longitude',
              'long_name': 'Characteristic longitude of mesh edges.',
              'units': 'degrees_east',
@@ -127,7 +151,7 @@ def main(*, filename: Path='./cs2.nc',
             ),
         'cs_edge_y': (
             ['ncs_edge',],
-            yedges.data,
+            yedges.data / deg2rad,
             {'standard_name': 'latitude',
              'long_name': 'Characteristic latitude of mesh edges.',
              'units': 'degrees_north',
