@@ -15,13 +15,17 @@ import time
 
 def main(*, filename: Path='./cs2.nc',
             func_space: FunctionSpace=FunctionSpace.W2H,
-            scalar_func: str='A * cos(y)*cos(x)'):
+            scalar_func: str='A * cos(y)*cos(x)',
+            zaxis: list[float]=[],
+            taxis: list[float]=[]):
 
     """
     Generate a vector field from a scalar function
     :param Path filename: Ugrid file containing the mesh coordinates
     :param FunctionSpace func_space: either FunctionSpace.W2H or FunctionSpace.W1
     :param str scalar_func: either the stream function (if FunctionSpace.W2H) or the potential function (if FunctionSpace.W1). Should be a function of x, y
+    :param list[float] zaxis: elevations
+    :param list[float] taxis: times
     """
     
     # vector components
@@ -57,14 +61,11 @@ def main(*, filename: Path='./cs2.nc',
     ybeg = ynodes[edge_node_connect[:, 0]]
     yend = ynodes[edge_node_connect[:, 1]]
 
-    # # get the edges coordinates, WRONG, NEED TO ACCOUNT FOR PERIODICITY!!!!!!
-    # xedges = 0.5*(xbeg + xend) # edge mid point
-    # yedges = 0.5*(ybeg + yend) # edge mid point
-
+    npoints = len(xnodes)
     nedges = len(xbeg)
 
-    # We need to be careful when computing the mid edge coordinates due the 
-    # periodicity. We compute the mif edge poisition first in cartesian coords
+    # Lon is defined up to a periodicity length. 
+    # We compute the mid edge poisition first in cartesian coords
     # then back to lon-lat.
     xyz_beg = numpy.zeros((nedges, 3), numpy.float64)
     xyz_beg[:, 0] = numpy.cos(ybeg) * numpy.cos(xbeg)
@@ -85,29 +86,63 @@ def main(*, filename: Path='./cs2.nc',
     rhoedges = numpy.sqrt( xyz_edges[:, 0]*xyz_edges[:, 0] + xyz_edges[:, 1]*xyz_edges[:, 1] )
     yedges = numpy.arctan2(xyz_edges[:, 2], rhoedges) # rads
 
-    # evaluate the scalarfunction at the beg/end points of the edges
-    from numpy import cos, sin, pi
+
+    if not taxis:
+        taxis = [0.]
+    nt = len(taxis)
+
+    if not zaxis:
+        # must have one level
+        if func_space == FunctionSpace.W1:
+            zaxis = [0.]
+        else:
+            # need at least two levels for W2
+            zaxis = [0., 1.]
+
+    if func_space == FunctionSpace.W1:
+        # full levels
+        nelev = len(zaxis)
+        elevs = zaxis
+    else:
+        # half levels
+        nelev = len(zaxis) - 1
+        elevs = [0.5*(zaxis[i] + zaxis[i+1]) for i in range(nelev)]
+
+    # evaluate the scalar function at the beg/end points of the edges
     A = planet_radius
-    x = xbeg
-    y = ybeg
-    psibeg = eval(scalar_func)
-    x = xend
-    y = yend
-    psiend = eval(scalar_func)
-    edge_integrals = psiend - psibeg
+    cos = numpy.cos
+    sin = numpy.sin
+    edge_integrals = numpy.zeros((nt, nelev, nedges), numpy.float64)
+    for it in range(nt):
+        for iz in range(nelev):
+            x, y = xbeg, ybeg
+            psibeg = eval(scalar_func)
+            x, y = xend, yend
+            psiend = eval(scalar_func)
+            edge_integrals[it, iz, :] = psiend - psibeg
 
-    num_edges = len(xedges)
-    uedges = numpy.zeros((num_edges,), numpy.float64)
-    vedges = numpy.zeros((num_edges,), numpy.float64)
 
-    # set the vector components at the mid edge positions
+    # evaluate the vector components at the mid edge positions
     x = xedges
     y = yedges
-    uedges[:] = eval(str(u_expr))
-    vedges[:] = eval(str(v_expr))
 
-    print(uedges)
-    print(vedges)
+    uedges = numpy.zeros((nt, nelev, nedges,), numpy.float64)
+    vedges = numpy.zeros((nt, nelev, nedges,), numpy.float64)
+
+
+    print(f'u = {u_expr}')
+    print(f'v = {v_expr}')
+    print(f'x = {x}')
+    print(f'y = {y}')
+    for it in range(nt):
+        t = taxis[it]
+        for iz in range(nelev):
+            z = elevs[iz]
+            uedges[it, iz, :] = eval(str(u_expr))
+            vedges[it, iz, :] = eval(str(v_expr))
+
+    print(f'u = {uedges}')
+    print(f'v = {vedges}')
 
     # rad -> deg
     xedges /= deg2rad
@@ -116,7 +151,7 @@ def main(*, filename: Path='./cs2.nc',
     # create a new dataset
     ds = xarray.Dataset(
         {'u_in_w2h': (
-            ['ncs_edge',],
+            ['nt', 'nelev', 'ncs_edge',],
             uedges,
             {'long_name': 'eastward_wind_at_cell_faces',
                 'units': 'm s-1',
@@ -126,7 +161,7 @@ def main(*, filename: Path='./cs2.nc',
             }
           ),
         'v_in_w2h': (
-            ['ncs_edge',],
+            ['nt', 'nelev', 'ncs_edge',],
             vedges,
             {'long_name': 'northward_wind_at_cell_faces',
              'units': 'm s-1',
@@ -136,8 +171,8 @@ def main(*, filename: Path='./cs2.nc',
             }
           ),
         'edge_integrals': (
-            ['ncs_edge',],
-            edge_integrals.data,
+            [nt, nelev, 'ncs_edge',],
+            edge_integrals,
             {'long_name': 'wind_integrated_at_cell_faces',
              'units': 'm2 s-1',
              'mesh': 'cs',
@@ -159,6 +194,18 @@ def main(*, filename: Path='./cs2.nc',
             {'standard_name': 'latitude',
              'long_name': 'Characteristic latitude of mesh edges.',
              'units': 'degrees_north',
+            }
+            ),
+        'elevs': (
+            ['nelev',],
+            elevs,
+            ),
+        'time': (
+            ['nt',],
+            taxis,
+            {'standard_name': 'time',
+             'calendar': 'gregorian',
+            'units': 'days since 2000-01-01',
             }
             ),
         },
