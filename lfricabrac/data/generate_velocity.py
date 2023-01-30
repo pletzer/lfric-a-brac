@@ -122,7 +122,6 @@ def main(*, filename: Path='./cs2.nc',
             x, y = xend, yend
             psiend = eval(scalar_func)
             edge_integrals[it, iz, :] = psiend - psibeg
-    print(f'edge_integrals = {edge_integrals}')
 
 
     # evaluate the vector components at the mid edge positions
@@ -133,19 +132,15 @@ def main(*, filename: Path='./cs2.nc',
     vedges = numpy.zeros((nt, nelev, nedges,), numpy.float64)
 
 
+    print(f'function space: {func_space}')
     print(f'u = {u_expr}')
     print(f'v = {v_expr}')
-    print(f'x = {x}')
-    print(f'y = {y}')
     for it in range(nt):
         t = taxis[it]
         for iz in range(nelev):
             z = elevs[iz]
             uedges[it, iz, :] = eval(str(u_expr))
             vedges[it, iz, :] = eval(str(v_expr))
-
-    print(f'u = {uedges}')
-    print(f'v = {vedges}')
 
     # rad -> deg
     xedges /= deg2rad
