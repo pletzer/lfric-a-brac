@@ -103,10 +103,12 @@ def main(*, filename: Path='./cs2.nc',
         # full levels
         nelev = len(zaxis)
         elevs = zaxis
+        wind_integrated_name = 'wind_integrated_at_cell_edges'
     else:
         # half levels
         nelev = len(zaxis) - 1
         elevs = [0.5*(zaxis[i] + zaxis[i+1]) for i in range(nelev)]
+        wind_integrated_name = 'wind_integrated_at_cell_faces'
 
     # evaluate the scalar function at the beg/end points of the edges
     A = planet_radius
@@ -120,6 +122,7 @@ def main(*, filename: Path='./cs2.nc',
             x, y = xend, yend
             psiend = eval(scalar_func)
             edge_integrals[it, iz, :] = psiend - psibeg
+    print(f'edge_integrals = {edge_integrals}')
 
 
     # evaluate the vector components at the mid edge positions
@@ -149,8 +152,8 @@ def main(*, filename: Path='./cs2.nc',
     yedges /= deg2rad
 
     # create a new dataset
-    ds = xarray.Dataset(
-        {'u_in_w2h': (
+    ds = xarray.Dataset({
+        'u_in_w2h': (
             ['nt', 'nelev', 'ncs_edge',],
             uedges,
             {'long_name': 'eastward_wind_at_cell_faces',
@@ -171,9 +174,9 @@ def main(*, filename: Path='./cs2.nc',
             }
           ),
         'edge_integrals': (
-            [nt, nelev, 'ncs_edge',],
+            ['nt', 'nelev', 'ncs_edge',],
             edge_integrals,
-            {'long_name': 'wind_integrated_at_cell_faces',
+            {'long_name': wind_integrated_name,
              'units': 'm2 s-1',
              'mesh': 'cs',
              'location': 'edge',
